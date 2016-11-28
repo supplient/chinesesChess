@@ -1,0 +1,17 @@
+class behindBoard:
+	#balabala
+	def move(startPoint, endPoint)->board:
+		...
+		#raise InvalidError
+	
+	def get_init_board()->board:
+		...
+		
+board:二位矩阵9X10
+	帅方为正，将方为负
+	兵、炮、车、马、象、士、帅（1~7）
+	没有子为0
+		
+class frontBoard:
+	#balabala
+	
