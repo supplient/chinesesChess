@@ -5,6 +5,7 @@ sys.path.append(os.path.abspath(os.curdir))
 import tkinter as tk
 import pdb
 from frontBoard_enum import *
+from behindBoard import *
 
 verPadding = 15
 horPadding = 15
@@ -14,18 +15,19 @@ verEnd = verPadding + 9*gridLength
 
 pieceLength = 20
 
-piecesText = ['', '兵', '炮', '车', '马', '象', '士', '帅']
+piecesText = {0:'', 1:'兵', 2:'炮', 3:'车', 4:'马', 5:'相', 6:'仕', 7:'帅', 
+					-1:'卒', -2:'炮', -3:'車', -4:'馬', -5:'象', -6:'士', -7:'将'}
 
-def init_board():
-	board = []
-	for i in range(9):
-		column = []
-		for j in range(10):
-			column.append(NO_PIECE)
-		board.append(column)
-	for i in range(1, 8):
-		board[i][i]=i 
-	return board
+# def init_board():
+	# board = []
+	# for i in range(9):
+		# column = []
+		# for j in range(10):
+			# column.append(NO_PIECE)
+		# board.append(column)
+	# for i in range(1, 8):
+		# board[i][i]=i 
+	# return board
 	
 def _get_row_column(x, y):
 	x = int(x-horPadding)
@@ -36,13 +38,22 @@ def _get_row_column(x, y):
 	if y%gridLength >= gridLength/2:
 		column += 1
 	return row, column
+	
+def _reverse_board(board):
+	x_len = len(board)
+	y_len = len(board[0])
+	new_board = [[board[x][y] for x in range(x_len)] for y in range(y_len)]
+	return new_board
+	
+def _reverse_point(p):
+	return p[1], p[0]
 
 class FrontBoard(tk.Canvas):	
 	def __init__(self, *args, **keywords):
 		super(FrontBoard, self).__init__(*args, **keywords)
 		
 		self.onceClicked = False
-		self.board = init_board() #backBoard.get_init_board()
+		self.board = _reverse_board(get_init_board())
 		
 		self.__draw_base_board()
 		self.__draw_pieces()
@@ -65,6 +76,34 @@ class FrontBoard(tk.Canvas):
 			endPoint = horPadding+i*gridLength, verEnd
 			itmeId = self.create_line(*startPoint, *endPoint)
 			self.addtag_withtag("boardLine", itemId)
+			
+		#画将帅的九宫格
+		leftSP = horPadding+3*gridLength, verPadding
+		leftEP = horPadding+5*gridLength, verPadding+2*gridLength
+		rightSP = horPadding+5*gridLength, verPadding
+		rightEP = horPadding+3*gridLength, verPadding+2*gridLength
+		self.create_line(*leftSP, *leftEP, tags="boardLine")
+		self.create_line(*rightSP, *rightEP, tags="boardLine")
+		
+		leftSP = leftSP[0], leftSP[1]+7*gridLength
+		leftEP = leftEP[0], leftEP[1]+7*gridLength
+		rightSP = rightSP[0], rightSP[1]+7*gridLength
+		rightEP = rightEP[0], rightEP[1]+7*gridLength
+		self.create_line(*leftSP, *leftEP, tags="boardLine")
+		self.create_line(*rightSP, *rightEP, tags="boardLine")
+		
+		#画楚河汉界
+		topLeftSP = horPadding, verPadding+4*gridLength
+		bottomRightSP = horEnd, verPadding+5*gridLength
+		self.create_rectangle(*topLeftSP, *bottomRightSP, fill="white", tags="boardLine")
+		
+		text_x = horPadding+1.5*gridLength
+		text_y = verPadding+4.5*gridLength
+		textPos = {'楚':(text_x, text_y), '河':(text_x+gridLength, text_y),
+					'汉':(text_x+4*gridLength, text_y), '界':(text_x+5*gridLength, text_y)}
+		for word in textPos.keys():
+			self.create_text(*textPos[word], text=word, tags="boardLine", anchor=tk.CENTER)
+		
 	
 	
 	def __draw_pieces(self):
@@ -136,11 +175,14 @@ class FrontBoard(tk.Canvas):
 		row, column = _get_row_column(x, y)
 		cp = self.chosenPiece
 		
-		self.board[cp[0]][cp[1]], self.board[row][column] = NO_PIECE, self.board[cp[0]][cp[1]]
-		# try:
-			# self.board = backBoard.move(*self.chosenPiece, row, column)
-		# except:
-			# return
+		# self.board[cp[0]][cp[1]], self.board[row][column] = NO_PIECE, self.board[cp[0]][cp[1]]
+		bb = behindBoard(_reverse_point(cp), _reverse_point((row, column)))
+		# pdb.set_trace()
+		if bb.move(_reverse_board(self.board)):
+			self.board[row][column] = self.board[cp[0]][cp[1]]
+			self.board[cp[0]][cp[1]] = NO_PIECE
+		else:
+			return
 		self.__once_dischoose()
 		self.chosenPiece = None
 		self.__update_board()
