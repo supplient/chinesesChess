@@ -7,16 +7,6 @@ import pdb
 from frontBoard_enum import *
 from behindBoard import *
 
-verPadding = 15
-horPadding = 15
-gridLength = 20
-horEnd = horPadding + 8*gridLength
-verEnd = verPadding + 9*gridLength
-
-pieceLength = 20
-
-piecesText = {0:'', 1:'兵', 2:'炮', 3:'车', 4:'马', 5:'相', 6:'仕', 7:'帅', 
-					-1:'卒', -2:'炮', -3:'車', -4:'馬', -5:'象', -6:'士', -7:'将'}
 
 # def init_board():
 	# board = []
@@ -44,9 +34,24 @@ def _reverse_board(board):
 	y_len = len(board[0])
 	new_board = [[board[x][y] for x in range(x_len)] for y in range(y_len)]
 	return new_board
+
+def _board_change_side(board):
+	x_len = len(board)
+	y_len = len(board[0])
+	new_board = [[board[x_len-x-1][y_len-y-1] for y in range(y_len)] for x in range(x_len)]
+	return new_board
+	
+def _point_change_side(x_len, y_len, p):
+	return x_len-p[0]-1, y_len-p[1]-1
 	
 def _reverse_point(p):
 	return p[1], p[0]
+	
+def _get_piece_side(piece_type):
+	if piece_type>0:
+		return Side.RED
+	else:
+		return Side.BLUE
 
 class FrontBoard(tk.Canvas):	
 	def __init__(self, *args, **keywords):
@@ -54,6 +59,8 @@ class FrontBoard(tk.Canvas):
 		
 		self.onceClicked = False
 		self.board = _reverse_board(get_init_board())
+		self.side = Side.BLUE
+		self.runningSide = None
 		
 		self.__draw_base_board()
 		self.__draw_pieces()
@@ -61,6 +68,35 @@ class FrontBoard(tk.Canvas):
 		self.bind("<Button-1>", self.__onMouseLeftClicked)
 		self.bind("<Button-3>", self.__onMouseRightClicked)
 		
+	def setRunningSide(self, runningSide):
+		self.runningSide = runningSide
+	
+	def setSide(self, side):
+		if self.side == side:
+			return
+		self.reverseSide()
+		
+	def isMyTurn(self):
+		return self.side == self.runningSide
+		
+	def reverseSide(self):
+		if self.side == Side.RED:
+			self.side = Side.BLUE
+		else:
+			self.side = Side.RED
+		self.__change_side()
+		
+	def reverseRunningSide(self):
+		if self.runningSide == Side.RED:
+			self.runningSide = Side.BLUE
+		elif self.runningSide == Side.BLUE:
+			self.runningSide = Side.RED
+		else:
+			raise Exception("Not Runnning!")
+		
+	def __change_side(self):
+		self.board = _board_change_side(self.board)
+		self.__update_board()
 		
 	def __draw_base_board(self):
 		#画横线
@@ -114,6 +150,7 @@ class FrontBoard(tk.Canvas):
 					
 					
 	def __draw_piece(self, piece_type, row, column):
+		piece_color = "red" if piece_type>0 else "blue"
 		piece_text = piecesText[piece_type]
 		x = horPadding + row*gridLength
 		y = verPadding + column*gridLength
@@ -121,7 +158,7 @@ class FrontBoard(tk.Canvas):
 		circleLT = x-pieceLength/2, y-pieceLength/2
 		circleRB = x+pieceLength/2, y+pieceLength/2
 		circleId = self.create_oval(*circleLT, *circleRB, outline="black", fill="white")
-		textId = self.create_text(x, y, text=piece_text, anchor=tk.CENTER)
+		textId = self.create_text(x, y, text=piece_text, anchor=tk.CENTER, fill=piece_color)
 		
 		self.addtag_withtag("piece", circleId)
 		self.addtag_withtag("piece", textId)
@@ -147,8 +184,12 @@ class FrontBoard(tk.Canvas):
 		
 	def __once_dischoose(self):
 		self.delete("chosenLine")
+		
+		
 	
 	def __onMouseLeftClicked(self, event):
+		if not(self.isMyTurn()):
+			return
 		if self.onceClicked:
 			self.__onSecondClicked(event)
 		else:
@@ -156,6 +197,8 @@ class FrontBoard(tk.Canvas):
 			
 			
 	def __onMouseRightClicked(self, event):
+		if not(self.isMyTurn()):
+			return
 		if self.onceClicked:
 			self.__once_dischoose()
 			self.chosenPiece = None
@@ -166,6 +209,8 @@ class FrontBoard(tk.Canvas):
 		row, column = _get_row_column(x, y)
 		if self.board[row][column]==NO_PIECE:
 			return
+		if not(self.side == _get_piece_side(self.board[row][column])):
+			return
 		self.__once_choose(row, column)
 		self.chosenPiece = (row, column)
 		self.onceClicked = True
@@ -174,15 +219,26 @@ class FrontBoard(tk.Canvas):
 		x, y = event.x, event.y
 		row, column = _get_row_column(x, y)
 		cp = self.chosenPiece
+		#这里之所以有这么多奇怪的代码，是为了封装与BehindBoard的接口的复杂逻辑……
+		sp = cp
+		ep = (row,column)
+		if self.side == Side.RED:
+			sp = _point_change_side(9, 10, sp)
+			ep = _point_change_side(9, 10, ep)
+		sp = _reverse_point(sp)
+		ep = _reverse_point(ep)
+		bb = behindBoard(sp, ep)
 		
-		# self.board[cp[0]][cp[1]], self.board[row][column] = NO_PIECE, self.board[cp[0]][cp[1]]
-		bb = behindBoard(_reverse_point(cp), _reverse_point((row, column)))
-		# pdb.set_trace()
-		if bb.move(_reverse_board(self.board)):
+		boardForWorstBehind = _reverse_board(self.board)
+		if self.side == Side.RED:
+			boardForWorstBehind = _board_change_side(boardForWorstBehind)
+			
+		if bb.move(boardForWorstBehind):
 			self.board[row][column] = self.board[cp[0]][cp[1]]
 			self.board[cp[0]][cp[1]] = NO_PIECE
 		else:
 			return
+			
 		self.__once_dischoose()
 		self.chosenPiece = None
 		self.__update_board()
