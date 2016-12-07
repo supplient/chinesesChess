@@ -1,1 +1,12 @@
-DEBUG 7736 MainThread : side == runningSide   False
+INFO 10808 MainThread : 开始初始化Chinese Chess
+INFO 10808 Thread-1 : 进入__listen线程,address为('10.21.34.105', 23155)
+INFO 10808 Thread-1 : 进入监听循环
+INFO 10808 MainThread : 初始化Chinese Chess结束
+DEBUG 10808 MainThread : entry中的信息为 %link 10.21.34.105 23155
+INFO 10808 Thread-2 : 开始处理('10.21.34.105', 23155)的消息 %link 10.21.34.105 23155
+INFO 10808 Thread-2 : 开始请求连接, address为('10.21.34.105', 23155)
+INFO 10808 Thread-1 : 结束__listen线程
+INFO 10808 Thread-2 : target为('10.21.34.105', 23155), 等待连接回复...
+INFO 10808 Thread-2 : 收到连接回复  Msg.ASK_LINK_MSG
+INFO 10808 Thread-3 : 进入__listen线程,address为('10.21.34.105', 23155)
+INFO 10808 Thread-3 : 进入监听循环

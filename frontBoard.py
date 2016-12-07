@@ -54,19 +54,23 @@ def _get_piece_side(piece_type):
 		return Side.BLUE
 
 class FrontBoard(tk.Canvas):	
-	def __init__(self, *args, **keywords):
+	def __init__(self, *args, onPieceMove, **keywords):
 		super(FrontBoard, self).__init__(*args, **keywords)
 		
 		self.onceClicked = False
 		self.board = _reverse_board(get_init_board())
 		self.side = Side.BLUE
 		self.runningSide = None
+		self.onPieceMove = onPieceMove
 		
 		self.__draw_base_board()
 		self.__draw_pieces()
 		
 		self.bind("<Button-1>", self.__onMouseLeftClicked)
 		self.bind("<Button-3>", self.__onMouseRightClicked)
+		
+	def move(self, sx, sy, ex, ey):
+		self.__move(sx, sy , ex, ey)
 		
 	def setRunningSide(self, runningSide):
 		self.runningSide = runningSide
@@ -78,6 +82,9 @@ class FrontBoard(tk.Canvas):
 		
 	def isMyTurn(self):
 		return self.side == self.runningSide
+		
+	# def isGameOver(self):
+		
 		
 	def reverseSide(self):
 		if self.side == Side.RED:
@@ -234,15 +241,20 @@ class FrontBoard(tk.Canvas):
 			boardForWorstBehind = _board_change_side(boardForWorstBehind)
 			
 		if bb.move(boardForWorstBehind):
-			self.board[row][column] = self.board[cp[0]][cp[1]]
-			self.board[cp[0]][cp[1]] = NO_PIECE
+			self.__move(*cp, row, column)
 		else:
 			return
 			
 		self.__once_dischoose()
 		self.chosenPiece = None
-		self.__update_board()
+		self.onPieceMove(*cp, row, column)#向上级发送消息
 		self.onceClicked = False
+		
+	def __move(self, sx, sy, ex, ey):
+		self.board[ex][ey] = self.board[sx][sy]
+		self.board[sx][sy] = NO_PIECE
+		self.__update_board()
+		
 		
 		
 		
