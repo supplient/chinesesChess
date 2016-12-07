@@ -53,6 +53,12 @@ def _get_piece_side(piece_type):
 	else:
 		return Side.BLUE
 
+def _getBoardForWorstBehind(board, side):
+	boardForWorstBehind = _reverse_board(board)
+	if side == Side.RED:
+		boardForWorstBehind = _board_change_side(boardForWorstBehind)
+	return boardForWorstBehind
+
 class FrontBoard(tk.Canvas):	
 	def __init__(self, *args, onPieceMove, **keywords):
 		super(FrontBoard, self).__init__(*args, **keywords)
@@ -69,6 +75,12 @@ class FrontBoard(tk.Canvas):
 		self.bind("<Button-1>", self.__onMouseLeftClicked)
 		self.bind("<Button-3>", self.__onMouseRightClicked)
 		
+	def reset(self):
+		self.board = _reverse_board(get_init_board())
+		self.side = Side.BLUE
+		self.runningSide = None
+		self.__update_board()
+		
 	def move(self, sx, sy, ex, ey):
 		self.__move(sx, sy , ex, ey)
 		
@@ -80,10 +92,21 @@ class FrontBoard(tk.Canvas):
 			return
 		self.reverseSide()
 		
+	def getSide(self):
+		return self.side
+		
 	def isMyTurn(self):
 		return self.side == self.runningSide
 		
-	# def isGameOver(self):
+	def isGameOver(self):
+		board = _getBoardForWorstBehind(self.board, self.side)
+		judge = gameover(board)
+		if judge == "continue":
+			return False
+		elif judge == "redwin":
+			return Side.RED
+		else:
+			return Side.BLUE
 		
 		
 	def reverseSide(self):
@@ -236,9 +259,7 @@ class FrontBoard(tk.Canvas):
 		ep = _reverse_point(ep)
 		bb = behindBoard(sp, ep)
 		
-		boardForWorstBehind = _reverse_board(self.board)
-		if self.side == Side.RED:
-			boardForWorstBehind = _board_change_side(boardForWorstBehind)
+		boardForWorstBehind = _getBoardForWorstBehind(self.board, self.side)
 			
 		if bb.move(boardForWorstBehind):
 			self.__move(*cp, row, column)
@@ -254,7 +275,6 @@ class FrontBoard(tk.Canvas):
 		self.board[ex][ey] = self.board[sx][sy]
 		self.board[sx][sy] = NO_PIECE
 		self.__update_board()
-		
 		
 		
 		

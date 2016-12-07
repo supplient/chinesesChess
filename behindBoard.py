@@ -16,6 +16,25 @@ def get_init_board():
 		board[3][i] = 1
 		board[6][i] = -1
 	return board
+	
+def gameover(board):
+	isover = 0
+	redwin = 0
+	bluewin = 0
+	for i in range(10):
+		for j in range(9):
+			if board[i][j] == 7:
+				isover += 1
+				redwin = 1
+			if board[i][j] == -7:
+				bluewin = 1
+				isover += 1
+	if isover == 2:
+		return 'continue'
+	if isover != 2 and redwin:
+		return 'redwin'
+	if isover != 2 and bluewin:
+		return 'bluewin'
 
 class behindBoard:
 	dict = {	'帅': 7 , '仕':6,'相':5,'马':4,"车":3,"帅炮":2,"兵":1,"将":-7,"士":-6,"象":-5,"馬":-4,"車":-3,"将炮":-2,"卒":-1,'  ':0}
@@ -24,6 +43,8 @@ class behindBoard:
 		self.endPoint=endPoint
 	
 	def move(self,board):
+		if not board[self.endPoint[0]][self.endPoint[1]]*board[self.startPoint[0]][self.startPoint[1]]<=0:
+			return False
 		i=self.startPoint[0]
 		j=self.startPoint[1]
 		k=self.endPoint[0]
@@ -113,29 +134,4 @@ class behindBoard:
 				return 0
 			else:
 				return 1
-	def domove(self):
-		if move(board) and board[self.endPoint[0]][self.endPoint[1]]*board[self.startPoint[0]][self.startPoint[1]]<=0 :
-			board[self.endPoint[0]][self.endPoint[1]]=board[self.startPoint[0]][self.startPoint[1]]
-			board[self.startPoint[0]][self.startPoint[1]]=0
-			return (board)
-		else:
-			return 'wrong'
-	def gameover(self,board):
-		isover = 0
-		redwin = 0
-		bluewin = 0
-		for i in range(10):
-			for j in range(9):
-				if board[i][j] == 7:
-					isover += 1
-					redwin = 1
-				if board[i][j] == -7:
-					bluewin = 1
-					isover += 1
-		if isover == 2:
-			return 'continue'
-		if isover != 2 and redwin:
-			return 'redwin'
-		if isover != 2 and blackwin:
-			return 'bluewin'
 

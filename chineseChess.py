@@ -61,6 +61,10 @@ def _pushFunc(queue, signal):
 def _point_change_side(x_len, y_len, p):
 	return x_len-p[0]-1, y_len-p[1]-1
 
+#我的ip  10.21.34.105
+#A号端口 23155
+#B号端口 23156
+#%link 10.21.34.105 23156
 	
 class ChineseChess(tk.Toplevel):
 	def temp_button_cmd(self):
@@ -155,6 +159,8 @@ class ChineseChess(tk.Toplevel):
 			self.__print("Rival move from {} to {}".format((sx,sy), (ex,ey)))
 			self.__move(sx, sy, ex, ey)
 			self.board.reverseRunningSide()
+			if self.board.isGameOver():
+				self.__gameOver(self.board.isGameOver())
 				
 				
 	def __onUserMsg(self, msg, add):
@@ -177,6 +183,8 @@ class ChineseChess(tk.Toplevel):
 			self.__print("You move from {} to {}".format((sx,sy), (ex,ey)))
 			self.__sendMsgToRival(msg)
 			self.board.reverseRunningSide()
+			if self.board.isGameOver():
+				self.__gameOver(self.board.isGameOver())
 			
 	def __move(self, sx, sy, ex, ey):
 		self.board.move(sx, sy, ex, ey)
@@ -210,6 +218,16 @@ class ChineseChess(tk.Toplevel):
 		info("游戏开始")
 		self.board.setRunningSide(Side.RED)
 		
+	def __gameOver(self, winSide):
+		info("游戏结束")
+		self.board.setRunningSide(None)
+		if winSide == self.board.getSide():
+			info("我赢了")
+			self.__print("You win!")
+		else:
+			info("我输了")
+			self.__print("You lose...")
+		self.board.reset()
 		
 		
 	#次消息队列函数	[block]
