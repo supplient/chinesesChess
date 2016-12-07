@@ -32,23 +32,24 @@ class behindBoard:
 		startNum=board[i][j]
 		endNum=board[k][l]
 		index=abs(startNum)
+		nums=0
 		if self.startPoint==self.endPoint:
 			return 0
 		if index == 7:
 			next = [(i - 1, j), (i + 1, j), (i, j - 1), (i, j + 1)]
-			if (k not in (0, 1, 2, 7, 8, 9) and l not in (3, 4, 5)):
+			if (k not in (0, 1, 2, 7, 8, 9) )or (l not in (3, 4, 5)):
 				return 0
-			if (i*k>48):
+			if (i>6 and k>6):
 				if (k,l)not in next:
 					return 0
 				else:
 					return 1
-			if i==0 and k<3:
+			elif (i<3 and k<3):
 				if (k,l) not in	 next:
 					return 0
 				else:
 					return 1
-			if (i==0 and k>3)or(5<k*i<48):
+			else:
 				if j == l:
 					for k_try in range(min(i, k) + 1, max(i, k)):
 						if board[k_try][l] != 0:
@@ -58,7 +59,7 @@ class behindBoard:
 					else:
 						return 0
 				else:
-					return 0
+					return 0	
 
 		if index == 6:
 			next = [(i - 1, j - 1), (i + 1, j - 1), (i - 1, j + 1), (i + 1, j + 1)]
@@ -113,7 +114,7 @@ class behindBoard:
 			else:
 				return 1
 	def domove(self):
-		if move(board):
+		if move(board) and board[self.endPoint[0]][self.endPoint[1]]*board[self.startPoint[0]][self.startPoint[1]]<=0 :
 			board[self.endPoint[0]][self.endPoint[1]]=board[self.startPoint[0]][self.startPoint[1]]
 			board[self.startPoint[0]][self.startPoint[1]]=0
 			return (board)
@@ -122,17 +123,19 @@ class behindBoard:
 	def gameover(self,board):
 		isover = 0
 		redwin = 0
-		blackwin = 0
+		bluewin = 0
 		for i in range(10):
 			for j in range(9):
 				if board[i][j] == 7:
 					isover += 1
 					redwin = 1
 				if board[i][j] == -7:
-					blackwin = 1
+					bluewin = 1
 					isover += 1
+		if isover == 2:
+			return 'continue'
 		if isover != 2 and redwin:
-			print("RED Wins!!!!")
+			return 'redwin'
 		if isover != 2 and blackwin:
-			print("BLACK Wins!!!")
-		return isover != 2
+			return 'bluewin'
+
