@@ -220,11 +220,13 @@ class FrontBoard(tk.Canvas):
 	def __onMouseLeftClicked(self, event):
 		if not(self.isMyTurn()):
 			return
-		if self.onceClicked:
-			self.__onSecondClicked(event)
-		else:
-			self.__onOnceClicked(event)
-			
+		try:
+			if self.onceClicked:
+				self.__onSecondClicked(event)
+			else:
+				self.__onOnceClicked(event)
+		except IndexError:
+			return
 			
 	def __onMouseRightClicked(self, event):
 		if not(self.isMyTurn()):

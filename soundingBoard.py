@@ -3,6 +3,7 @@ import os
 sys.path.append(os.path.abspath(os.curdir))
 
 from enhancedEnum import EnhancedEnum
+from net_enum import *
 from threading import Thread
 import socket, select
 import time
@@ -20,9 +21,9 @@ from logging import debug, info
 
 
 #交互信息约定：
-# @_@link
-# @_@yes
-# @_@no
+#link
+#yes
+#no
 
 class SBState(EnhancedEnum):
 	LISTEN = 0
@@ -30,9 +31,9 @@ class SBState(EnhancedEnum):
 	SEND = 2
 	
 class Msg(EnhancedEnum):
-	ASK_LINK_MSG = "@_@link"
-	YES_MSG = "@_@yes"
-	NO_MSG = "@_@no"
+	ASK_LINK_MSG = NET_HEAD+"link"
+	YES_MSG = NET_HEAD+"yes"
+	NO_MSG = NET_HEAD+"no"
 	
 
 class SoundingBoard:
