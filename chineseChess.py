@@ -23,7 +23,7 @@ import logging
 from logging import debug, info
 
 logging.basicConfig(format="%(asctime)s %(process)d %(threadName)s : %(message)s",
-			level=logging.DEBUG)
+			level=logging.DEBUG, filename="chineseChessLog.log", filemode='w')
 
 # logger = logging.getLogger("chineseChess")
 # sh = logging.StreamHandler()
@@ -157,6 +157,13 @@ class ChineseChess(tk.Toplevel):
 				self.__print("unknown command")
 			except NotLinked:
 				self.__print("has not linked someone")
+			except UndoTurnError:
+				self.__print("You can only undo when it's rival's turn.")
+			except UndoMaxError:
+				self.__print("You cannot undo any more.")
+				self.board.reverseRunningSide()
+			except GameNotStartError:
+				self.__print("Game has not started.")
 			
 	def __onNetMsg(self, msg, add):
 		if msg == "start":
@@ -189,10 +196,31 @@ class ChineseChess(tk.Toplevel):
 			sx, sy = _point_change_side(9, 10, (sx, sy))
 			ex, ey = _point_change_side(9, 10, (ex, ey))
 			self.__print("Rival move from {} to {}".format((sx,sy), (ex,ey)))
-			self.__move(sx, sy, ex, ey)
 			self.board.reverseRunningSide()
+			self.__move(sx, sy, ex, ey)
 			if self.board.isGameOver():
 				self.__gameOver(self.board.isGameOver())
+				
+		elif msg == "undo":
+			info("收到对方悔棋的请求")
+			self.__print("对方请求悔棋")
+			self.__undo()
+			
+		elif msg == "sign":
+			info("收到对方认输的请求")
+			self.__print("对方认输")
+			winSide = Side.RED if self.board.getSide()==Side.RED else Side.BLUE
+			self.__gameOver(winSide)
+			
+		elif msg == "draw":
+			info("收到对方和棋请求")
+			self.__print("对方请求和棋，是否同意？")
+			if self.__askUserWhether(self.sound.getMyAdd()):
+				self.__sendMsgToRival("yes")
+				self.__gameOver(None)
+			else:
+				self.__sendMsgToRival("no")
+				
 		else:
 			raise UnknownNetCmdError
 				
@@ -204,6 +232,8 @@ class ChineseChess(tk.Toplevel):
 			self.sound.linkTo((ip,port))
 			
 		elif msg == "start":
+			if not self.sound.isLinked():
+				raise NotLinked
 			self.__print("Waiting for rival's answer.....")
 			self.__sendMsgToRival("start")
 			if self.__askRivalWhether(self.sound.getTargetAdd()):
@@ -217,16 +247,48 @@ class ChineseChess(tk.Toplevel):
 			self.__print("You move from {} to {}".format((sx,sy), (ex,ey)))
 			self.__sendMsgToRival(msg)
 			self.board.reverseRunningSide()
+			self.board.update()
 			if self.board.isGameOver():
 				self.__gameOver(self.board.isGameOver())
 			
 		elif msg == "help":
 			self.__showHelp()
 			
+		elif msg == "undo":
+			if not self.board.getRunningSide():
+				raise GameNotStartError
+			info("请求悔棋")
+			if self.board.isMyTurn():
+				raise UndoTurnError
+			self.__undo()
+			self.__sendMsgToRival("undo")
+			
+		elif msg == "sign":
+			if not self.board.getRunningSide():
+				raise GameNotStartError
+			info("请求认输")
+			winSide = Side.BLUE if self.board.getSide()==Side.RED else Side.RED
+			self.__gameOver(winSide)
+			self.__sendMsgToRival("sign")
+			
+		elif msg == "draw":
+			if not self.board.getRunningSide():
+				raise GameNotStartError
+			info("请求和局")
+			self.__print("Waiting for rival's answer.....")
+			self.__sendMsgToRival("draw")
+			if self.__askRivalWhether(self.sound.getTargetAdd()):
+				self.__print("Agreed.")
+				self.__gameOver(None)
+			else:
+				self.__print("Refused.")
+			
 		else:
 			raise UnknownUserCmdError
 			
 	def __onUserChatMsg(self, msg):
+		if not self.sound.isLinked():
+			raise NotLinked
 		self.__sendChatMsgToRival(msg)
 		
 	def __onNetChatMsg(self, msg):
@@ -234,9 +296,16 @@ class ChineseChess(tk.Toplevel):
 			
 	def __move(self, sx, sy, ex, ey):
 		self.board.move(sx, sy, ex, ey)
-	
+		
+	def __undo(self):
+		self.board.reverseRunningSide()
+		info("撤一步")
+		self.board.undo()
 		
 	def __onLinkAsk(self, add):
+		if add==self.sound.getMyAdd():
+			self.__print("You cannot link with yourself!!!")
+			return False
 		self.__print("{} want to link with you, do you?".format(add))
 		if self.__askUserWhether(self.sound.getMyAdd()):
 			self.__print("Link success")
@@ -271,24 +340,50 @@ class ChineseChess(tk.Toplevel):
 	def __gameStart(self):
 		info("游戏开始")
 		self.board.setRunningSide(Side.RED)
+		self.board.gameStart()
 		
 	def __gameOver(self, winSide):
 		info("游戏结束")
 		self.board.setRunningSide(None)
-		if winSide == self.board.getSide():
+		mySide = self.board.getSide()
+		rivalSide = Side.RED if mySide==Side.BLUE else Side.BLUE
+		
+		# if str(winSide)==str(Side.RED):
+			# debug("winSide==Side? {}".format(True))
+			# winSide_shell="red"
+		# elif str(winSide)==str(Side.BLUE):
+			# debug("winSide==Side? {}".format(True))
+			# winSide_shell="blue"
+		# else:
+			# debug("winSide==Side? {}".format(False))
+			# winSide_shell=None
+			
+		if winSide == mySide:
 			info("我赢了")
 			self.__print("You win!")
-		else:
+		elif winSide == rivalSide:
 			info("我输了")
 			self.__print("You lose...")
+		else:
+			info("平局")
+			self.__print("Draw!")
+			
+		# if winSide_shell:
+			# debug("cc:进入更新成绩")
+			# self.shell.plusScore(winSide_shell)
+			
 		self.board.reset()
 		
 	def __showHelp(self):
 		help = '''
-%link [ip] [port]
+%link [ip] [port]请求连接至(ip, port)
 %yes
 %no
-%start
+%start当连接成功后开始游戏
+%sign认输
+%draw请求和棋
+%undo悔棋
+chat_msg没有%前缀时为聊天信息
 		'''
 		self.__print(help)
 		

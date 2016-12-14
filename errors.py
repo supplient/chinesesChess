@@ -8,3 +8,11 @@ class UnknownNetCmdError(UnknownCmdError):
 	
 class NotLinked(Exception):
 	pass
+	
+class UndoTurnError(Exception):
+	pass
+class UndoMaxError(Exception):
+	pass
+	
+class GameNotStartError(Exception):
+	pass

@@ -3,9 +3,14 @@ import os
 sys.path.append(os.path.abspath(os.curdir))
 
 import tkinter as tk
-import pdb
 from frontBoard_enum import *
 from behindBoard import *
+from errors import *
+
+import copy
+import logging
+from logging import debug, info
+			
 
 
 # def init_board():
@@ -68,8 +73,10 @@ class FrontBoard(tk.Canvas):
 		self.side = Side.BLUE
 		self.runningSide = None
 		self.onPieceMove = onPieceMove
+		self.old_boards = []
 		
 		self.__draw_base_board()
+		self.__update_running_side()
 		self.__draw_pieces()
 		
 		self.bind("<Button-1>", self.__onMouseLeftClicked)
@@ -77,23 +84,61 @@ class FrontBoard(tk.Canvas):
 		
 	def reset(self):
 		self.board = _reverse_board(get_init_board())
+		self.old_boards = []
 		self.side = Side.BLUE
 		self.runningSide = None
+		self.__update_board()
+		
+	def update(self):
 		self.__update_board()
 		
 	def move(self, sx, sy, ex, ey):
 		self.__move(sx, sy , ex, ey)
 		
-	def setRunningSide(self, runningSide):
-		self.runningSide = runningSide
-	
+	def undo(self):
+		if len(self.old_boards)==0:
+			raise UndoMaxError
+		debug("board==old_boards ? {}".format(self.old_boards[len(self.old_boards)-1]==self.board))
+		self.board = self.old_boards.pop()
+		self.__update_board()		
+		self.chosenPiece = None
+		self.onceClicked = False
+		self.__once_dischoose()
+		
+	def gameStart(self):
+		self.__update_running_side()
+		
+		
 	def setSide(self, side):
 		if self.side == side:
 			return
-		self.reverseSide()
+		self.side = side
+		self.__change_side()
+		
+	def setRunningSide(self, runningSide):
+		self.runningSide = runningSide
+		
+	def reverseSide(self):
+		if self.side == Side.RED:
+			self.setSide(Side.BLUE)
+		else:
+			self.setSide(Side.RED)
+		
+	def reverseRunningSide(self):
+		if self.runningSide == Side.RED:
+			self.setRunningSide(Side.BLUE)
+		elif self.runningSide == Side.BLUE:
+			self.setRunningSide(Side.RED)
+		else:
+			raise Exception("Not Runnning!")
+		
 		
 	def getSide(self):
 		return self.side
+		
+	def getRunningSide(self):
+		return self.runningSide
+		
 		
 	def isMyTurn(self):
 		return self.side == self.runningSide
@@ -108,21 +153,6 @@ class FrontBoard(tk.Canvas):
 		else:
 			return Side.BLUE
 		
-		
-	def reverseSide(self):
-		if self.side == Side.RED:
-			self.side = Side.BLUE
-		else:
-			self.side = Side.RED
-		self.__change_side()
-		
-	def reverseRunningSide(self):
-		if self.runningSide == Side.RED:
-			self.runningSide = Side.BLUE
-		elif self.runningSide == Side.BLUE:
-			self.runningSide = Side.RED
-		else:
-			raise Exception("Not Runnning!")
 		
 	def __change_side(self):
 		self.board = _board_change_side(self.board)
@@ -194,6 +224,8 @@ class FrontBoard(tk.Canvas):
 		self.addtag_withtag("piece", textId)
 		
 	def __update_board(self):
+		debug("update board")
+		self.__update_running_side()
 		self.delete("piece")
 		self.__draw_pieces()
 		
@@ -214,6 +246,25 @@ class FrontBoard(tk.Canvas):
 		
 	def __once_dischoose(self):
 		self.delete("chosenLine")
+		
+	def __draw_running_side(self, text, color):
+		x = horPadding + 4*gridLength
+		y = verPadding + 4.5*gridLength
+		
+		textId = self.create_text(x, y, text=text, anchor=tk.CENTER, fill=color)		
+		
+		self.addtag_withtag("side", textId)
+		
+	def __update_running_side(self):
+		self.delete("side")		
+		if self.runningSide == Side.BLUE:
+			text=("将方", "blue")
+		elif self.runningSide == Side.RED:
+			text=("帅方", "red")
+		else:
+			text=("", "black")
+		self.__draw_running_side(*text)
+		
 		
 		
 	
@@ -274,9 +325,16 @@ class FrontBoard(tk.Canvas):
 		self.onceClicked = False
 		
 	def __move(self, sx, sy, ex, ey):
+		debug("产生移动")
+		oldLen = len(self.old_boards)
+		if oldLen == 0:
+			self.old_boards.append(copy.deepcopy(self.board))
+		elif not self.old_boards[oldLen-1] == self.board:
+			self.old_boards.append(copy.deepcopy(self.board))
 		self.board[ex][ey] = self.board[sx][sy]
 		self.board[sx][sy] = NO_PIECE
 		self.__update_board()
+		
 		
 		
 		

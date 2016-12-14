@@ -1,0 +1,8 @@
+2016-12-14 09:19:22,556 5668 MainThread : 开始初始化Chinese Chess
+2016-12-14 09:19:22,575 5668 Thread-1 : 进入__listen线程,address为('10.21.34.105', 23156)
+2016-12-14 09:19:22,575 5668 Thread-1 : 进入监听循环
+2016-12-14 09:19:22,575 5668 MainThread : 初始化Chinese Chess结束
+2016-12-14 09:19:22,575 5668 MainThread : 请求绘制 Your address is ('10.21.34.105', 23156)
+
+2016-12-14 09:19:22,584 5668 MainThread : 请求绘制 Press %help for help
+
